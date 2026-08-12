@@ -43,8 +43,7 @@ app.get('/', (req, res) => {
   res.send('Wevlo Push Notification Server is Running!');
 });
 
-// ── Register App (APK build থেকে password সেট হয়) ──
-// POST /register-app  { appId, password }
+// ── Register App ──
 app.post('/register-app', async (req, res) => {
   const { appId } = req.body;
   if (!isValidAppId(appId)) return res.status(400).json({ success: false, error: 'valid appId required' });
@@ -67,8 +66,7 @@ app.post('/register-app', async (req, res) => {
   }
 });
 
-// ── Register Token (APK থেকে আসে) ──
-// POST /register-token  { token, appId, userAgent?, password? }
+// ── Register Token ──
 app.post('/register-token', async (req, res) => {
   const { token, appId, userAgent } = req.body;
 
@@ -92,13 +90,10 @@ app.post('/register-token', async (req, res) => {
   }
 });
 
-// ── Get tokens by appId (password required) ──
-// GET /tokens?appId=com.myapp.xyz&password=xxx
+// ── Get tokens by appId ──
 app.get('/tokens', async (req, res) => {
   const { appId } = req.query;
   if (!isValidAppId(appId)) return res.status(400).json({ success: false, error: 'valid appId required' });
-
-  // Password check disabled — সব request password ছাড়াই allow
 
   try {
     const snap   = await devicesRef(appId).get();
@@ -113,13 +108,10 @@ app.get('/tokens', async (req, res) => {
   }
 });
 
-// ── Send to one token (password required) ──
-// POST /send-notification  { token, title, body, password, appId }
+// ── Send to one token ──
 app.post('/send-notification', async (req, res) => {
   const { token, title, body, imageUrl } = req.body;
   if (!token) return res.status(400).json({ success: false, error: 'token required' });
-
-  // Password check disabled — password ছাড়াই allow
 
   try {
     const t = title || 'Notification';
@@ -139,13 +131,10 @@ app.post('/send-notification', async (req, res) => {
   }
 });
 
-// ── Send to ALL tokens of an appId (password required) ──
-// POST /send-all  { appId, title, body, password }
+// ── Send to ALL tokens of an appId ──
 app.post('/send-all', async (req, res) => {
   const { appId, title, body, imageUrl } = req.body;
   if (!isValidAppId(appId)) return res.status(400).json({ success: false, error: 'valid appId required' });
-
-  // Password check disabled — password ছাড়াই allow
 
   try {
     const snap = await devicesRef(appId).get();
@@ -163,7 +152,6 @@ app.post('/send-all', async (req, res) => {
     const result = await admin.messaging().sendEach(messages);
     console.log(`[${appId}] Sent: ${result.successCount} ok, ${result.failureCount} failed`);
 
-    // invalid token গুলো Firestore থেকে delete করো
     const batch = db.batch();
     let removed = 0;
     result.responses.forEach((r, i) => {
@@ -184,13 +172,10 @@ app.post('/send-all', async (req, res) => {
   }
 });
 
-// ── Delete a token (password required) ──
-// DELETE /token?appId=com.myapp&token=xxx&password=yyy
+// ── Delete a token ──
 app.delete('/token', async (req, res) => {
   const { appId, token } = req.query;
   if (!isValidAppId(appId) || !token) return res.status(400).json({ success: false, error: 'appId and token required' });
-
-  // Password check disabled — password ছাড়াই allow
 
   try {
     await devicesRef(appId).doc(tokenDocId(token)).delete();
